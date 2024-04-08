@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.25;
-import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 interface IIssuance {
     /// Errors
@@ -17,8 +17,16 @@ interface IIssuance {
     function redeem(uint256 amount) external;
 
     /// @notice Get underlying asset deposit confirmation from custodian
-    function confirmDeposit(address depositer, IERC20[] memory tokens, uint256[] memory tokenAmounts) external;
+    function confirmDeposit(
+        address depositer,
+        IERC20[] memory tokens,
+        uint256[] memory tokenAmounts
+    ) external;
 
     /// @notice Get underlying asset redemption confirmation from custodian
-    function confirmRedemption(address redeemer, IERC20[] memory tokens, uint256[] memory tokenAmounts) external;
+    function confirmRedemption(
+        address redeemer,
+        IERC20[] memory tokens,
+        uint256[] memory tokenAmounts
+    ) external;
 }

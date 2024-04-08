@@ -2,9 +2,12 @@
 pragma solidity 0.8.25;
 
 interface INavTracker {
-    // Events
-    event tvlReceived(uint256 tvl, uint256 timestamp);
-    event latestNav(uint256 nav);
+    // Errors //
+    error NavTracker__NotAuthorized(address sender);
+
+    // Events //
+    event TVLReceived(uint256 tvl, uint256 timestamp);
+    event LatestNav(uint256 nav);
 
     /// @notice will receive and store the latest total value locked from the custodian
     function tvlListener(uint256 latestTvl) external;
@@ -19,4 +22,5 @@ interface INavTracker {
     /// @notice returns the latest NAV
     function getNav() external view returns(uint256);
 
+    function getPrecision() external pure returns(uint256);
 }

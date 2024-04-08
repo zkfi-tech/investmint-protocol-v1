@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import {IIssuance} from "../interfaces/IIssuance.sol";
-import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract Issuance is IIssuance {
     function issue(uint256 amount) external {}
