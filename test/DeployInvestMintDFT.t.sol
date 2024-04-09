@@ -18,15 +18,16 @@ contract DeployInvestMintDFTTest is Test {
         (dft, issuance, navTracker) = deployer.run();
     }
 
-    function testDFTDeployed() external {
+    function testDFTDeployed() view external {
         assert(address(dft) != address(0));
+        assert(dft.totalSupply() == deployer.initialSupply());
     }
     
-    function testIssuanceDeployed() external {
+    function testIssuanceDeployed() view external {
         assert(address(issuance) != address(0));
     }
     
-    function testNavTrackerDeployed() external {
+    function testNavTrackerDeployed() view external {
         assert(address(navTracker) != address(0));
     }
 }

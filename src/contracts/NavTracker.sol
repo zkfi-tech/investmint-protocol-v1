@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract NavTracker is INavTracker {
     // States //
-    uint256 public totalValueLocked;
+    uint256 public assetsUnderManagement;
     uint256 public navPerDFT;
     IERC20 public immutable investMintDFT;
 
@@ -17,58 +17,64 @@ contract NavTracker is INavTracker {
 
     // Modifiers / Constructors //
     modifier only(address who) {
-        if(msg.sender != who) {
+        if (msg.sender != who) {
             revert NavTracker__NotAuthorized(msg.sender);
         }
         _;
     }
-    
-    constructor(uint256 _initialNav, address _issuance, address _investMintServer, uint256 _initialTVL, IERC20 _investMintDFT) {
+
+    constructor(
+        uint256 _initialNav,
+        address _issuance,
+        address _investMintServer,
+        uint256 _initialAUM,
+        IERC20 _investMintDFT
+    ) {
         navPerDFT = _initialNav; // 18 decimals
         issuance = _issuance;
         investMintServer = _investMintServer;
-        totalValueLocked = _initialTVL;
+        assetsUnderManagement = _initialAUM;
         investMintDFT = _investMintDFT;
 
         emit LatestNav(navPerDFT);
-        emit TVLReceived(totalValueLocked, block.timestamp);
+        emit AUMReceived(assetsUnderManagement, block.timestamp);
     }
-    
+
     // External Functions //
-    function tvlListener(uint256 latestTvl) external only(investMintServer) {
-        totalValueLocked = latestTvl; // 18 decimals
-        emit TVLReceived(totalValueLocked, block.timestamp);
+    function aumListener(uint256 latestAUM) external only(investMintServer) {
+        assetsUnderManagement = latestAUM; // 18 decimals
+        emit AUMReceived(assetsUnderManagement, block.timestamp);
         calculateNAV();
     }
-    
-    function calculateNAV() public returns(uint256) {
+
+    function calculateNAV() public returns (uint256) {
         uint256 circulatingDFTs = investMintDFT.totalSupply();
 
-        if(circulatingDFTs > 0) {
-            navPerDFT = (totalValueLocked / circulatingDFTs);
+        if (circulatingDFTs > 0) {
+            navPerDFT = (assetsUnderManagement / circulatingDFTs);
         }
 
-        return (navPerDFT / PRECISION);
+        return navPerDFT;
     }
 
     // Getter Functions //
-    function getNav() external view returns(uint256) {
+    function getNAV() external view returns (uint256) {
         return navPerDFT;
-    } 
-    
-    function getNavWithoutPrecision() external view returns(uint256) {
+    }
+
+    function getNAVWithoutPrecision() external view returns (uint256) {
         return (navPerDFT / PRECISION);
     }
 
-    function getTvl() external view returns(uint256) {
-        return totalValueLocked; // with PRECISION
+    function getAUM() external view returns (uint256) {
+        return assetsUnderManagement; // with PRECISION
     }
 
-    function getTvlWithoutPrecision() external view returns(uint256) {
-        return (totalValueLocked / PRECISION);
+    function getAUMWithoutPrecision() external view returns (uint256) {
+        return (assetsUnderManagement / PRECISION);
     }
 
-    function getPrecision() external pure returns(uint256) {
+    function getPrecision() external pure returns (uint256) {
         return PRECISION;
     }
 }
