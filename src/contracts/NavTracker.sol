@@ -53,10 +53,18 @@ contract NavTracker is INavTracker {
 
     // Getter Functions //
     function getNav() external view returns(uint256) {
+        return navPerDFT;
+    } 
+    
+    function getNavWithoutPrecision() external view returns(uint256) {
         return (navPerDFT / PRECISION);
     }
 
     function getTvl() external view returns(uint256) {
+        return totalValueLocked; // with PRECISION
+    }
+
+    function getTvlWithoutPrecision() external view returns(uint256) {
         return (totalValueLocked / PRECISION);
     }
 
