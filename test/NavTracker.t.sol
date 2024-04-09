@@ -5,11 +5,13 @@ import {Test} from "forge-std/Test.sol";
 import {NavTracker} from "src/contracts/NavTracker.sol";
 import {INavTracker} from "src/interfaces/INavTracker.sol";
 import {InvestMintDFT} from "src/contracts/InvestMintDFT.sol";
+import {Issuance} from "src/contracts/Issuance.sol";
 import {DeployInvestMintDFT} from "script/DeployInvestMintDFT.s.sol";
 
 contract NavTrackerTest is Test {
     NavTracker public navTracker;
     InvestMintDFT public dft;
+    Issuance public issuance;
     DeployInvestMintDFT public deployer;
     address public marketMaker = makeAddr("marketMaker");
     address public owner;
@@ -18,7 +20,7 @@ contract NavTrackerTest is Test {
 
     function setUp() external {
         deployer = new DeployInvestMintDFT();
-        (dft, , navTracker) = deployer.run();
+        (dft, issuance, navTracker) = deployer.run();
         investMintServer = deployer.investMintServer();
         owner = deployer.owner();
     }
@@ -90,7 +92,7 @@ contract NavTrackerTest is Test {
         navTracker.aumListener(increasedAUM);
 
         // minting 5 DFTs post deposit
-        vm.prank(owner);
+        vm.prank(address(issuance));
         dft.mint(marketMaker, mintDFTs);
 
         navTracker.calculateNAV(); // being calculated after both TVL & total supply have been updated
