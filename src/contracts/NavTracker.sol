@@ -10,7 +10,6 @@ contract NavTracker is INavTracker {
     uint256 public navPerDFT;
     IERC20 public immutable investMintDFT;
 
-    address public issuance;
     address public investMintServer;
 
     uint256 public constant PRECISION = 1e18;
@@ -25,13 +24,11 @@ contract NavTracker is INavTracker {
 
     constructor(
         uint256 _initialNav,
-        address _issuance,
         address _investMintServer,
         uint256 _initialAUM,
         IERC20 _investMintDFT
     ) {
         navPerDFT = _initialNav; // 18 decimals
-        issuance = _issuance;
         investMintServer = _investMintServer;
         assetsUnderManagement = _initialAUM;
         investMintDFT = _investMintDFT;
@@ -43,8 +40,7 @@ contract NavTracker is INavTracker {
     // External Functions //
     function aumListener(uint256 latestAUM) external only(investMintServer) {
         assetsUnderManagement = latestAUM; // 18 decimals
-        emit AUMReceived(assetsUnderManagement, block.timestamp);
-        calculateNAV();
+        emit AUMReceived(assetsUnderManagement, block.timestamp);  
     }
 
     function calculateNAV() public returns (uint256) {

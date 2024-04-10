@@ -4,11 +4,16 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 interface IIssuance {
     /// Errors
-    error Issuance__NoTokensIssued();
+    error Issuance__NoAssetsDeposited();
+    error Issuance__UnderlyingAssetsNotRedeemed();
+    error Issuance__UnAuthorizedSender(address);
+    error Issuance__ProtocolInvariantBroken(uint256 valueOfCirculatingDFTs, uint256 AUM);
 
     /// Events
     event DFTIssued(address, uint256);
     event DFTRedeemed(address, uint256);
+    event DepositVerifierFor(address);
+    event RedemptionVerifiedFor(address);
 
     /// @notice Issue DFTs to market maker
     function issue(uint256 amount) external;
@@ -18,15 +23,11 @@ interface IIssuance {
 
     /// @notice Get underlying asset deposit confirmation from custodian
     function confirmDeposit(
-        address depositer,
-        IERC20[] memory tokens,
-        uint256[] memory tokenAmounts
+        address depositer
     ) external;
 
     /// @notice Get underlying asset redemption confirmation from custodian
     function confirmRedemption(
-        address redeemer,
-        IERC20[] memory tokens,
-        uint256[] memory tokenAmounts
+        address redeemer
     ) external;
 }

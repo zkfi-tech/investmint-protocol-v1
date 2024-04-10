@@ -17,9 +17,11 @@ contract DeployInvestMintDFT is Script {
 
     function run() external returns(InvestMintDFT, Issuance, NavTracker) {
         vm.startBroadcast(owner);
-        Issuance issuance = new Issuance();
-        InvestMintDFT dft = new InvestMintDFT("InvestMintDFT", "IMDFT", address(issuance));
-        NavTracker navTracker = new NavTracker(initialNAV, address(issuance), investMintServer, initialAUM, dft);
+        InvestMintDFT dft = new InvestMintDFT("InvestMintDFT", "IMDFT");
+        NavTracker navTracker = new NavTracker(initialNAV, investMintServer, initialAUM, dft);
+        Issuance issuance = new Issuance(investMintServer, dft, navTracker);
+
+        dft.transferOwnership(address(issuance));
         vm.stopBroadcast();
 
         // minting the initial supply based on initial AUM & NAV to the protocol owner

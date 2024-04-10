@@ -61,7 +61,7 @@ contract NavTrackerTest is Test {
         // Act
         uint256 increasedAUM = currentAUM + 500e18;
         vm.prank(investMintServer);
-        navTracker.aumListener(increasedAUM); // will call calculateNav()
+        navTracker.aumListener(increasedAUM);
 
         // Assert
         // current AUM = 5000
@@ -69,6 +69,7 @@ contract NavTrackerTest is Test {
         // totalSupply = 500
         // active nav = 5500/500 = $11
         uint256 expectedNav = (increasedAUM / totalSupply);
+        navTracker.calculateNAV();
         uint256 activeNav = navTracker.getNAV();
 
         assert(initialNAV < activeNav);
@@ -95,7 +96,7 @@ contract NavTrackerTest is Test {
         vm.prank(address(issuance));
         dft.mint(marketMaker, mintDFTs);
 
-        navTracker.calculateNAV(); // being calculated after both TVL & total supply have been updated
+        navTracker.calculateNAV(); // being calculated after both AUM & total supply have been updated
 
         // Assert
         uint256 currentNAV = navTracker.getNAV();
