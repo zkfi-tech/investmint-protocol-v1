@@ -9,7 +9,6 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice The Digital Fund Token unitizing Vinter Index Multi Asset Basket 
 contract InvestMintDFT is ERC20, Ownable {
     error InvestMintDFT__ProvideNonZeroAmount();
-    error InvestMintDFT__NotTheIssuer(address);
     
     address public issuer;
  
@@ -29,13 +28,5 @@ contract InvestMintDFT is ERC20, Ownable {
         }
         
         _burn(holder, value);
-    }
-
-    function setIssuer(address _issuer) external {
-        issuer = _issuer;
-    }
-
-    function getIssuer() external view returns(address) {
-        return issuer;
     }
 }
