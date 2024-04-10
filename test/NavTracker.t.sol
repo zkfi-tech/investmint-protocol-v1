@@ -6,20 +6,20 @@ import {NavTracker} from "src/contracts/NavTracker.sol";
 import {INavTracker} from "src/interfaces/INavTracker.sol";
 import {InvestMintDFT} from "src/contracts/InvestMintDFT.sol";
 import {Issuance} from "src/contracts/Issuance.sol";
-import {DeployInvestMintDFT} from "script/DeployInvestMintDFT.s.sol";
+import {DeployInvestMint} from "script/DeployInvestMint.s.sol";
 
 contract NavTrackerTest is Test {
     NavTracker public navTracker;
     InvestMintDFT public dft;
     Issuance public issuance;
-    DeployInvestMintDFT public deployer;
+    DeployInvestMint public deployer;
     address public marketMaker = makeAddr("marketMaker");
     address public owner;
     address public random = makeAddr("random");
     address public investMintServer;
 
     function setUp() external {
-        deployer = new DeployInvestMintDFT();
+        deployer = new DeployInvestMint();
         (dft, issuance, navTracker) = deployer.run();
         investMintServer = deployer.investMintServer();
         owner = deployer.owner();

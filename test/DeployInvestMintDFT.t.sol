@@ -2,32 +2,32 @@
 pragma solidity 0.8.25;
 
 import {Test} from "forge-std/Test.sol";
-import {DeployInvestMintDFT} from "script/DeployInvestMintDFT.s.sol";
+import {DeployInvestMint} from "script/DeployInvestMint.s.sol";
 import {InvestMintDFT} from "src/contracts/InvestMintDFT.sol";
 import {Issuance} from "src/contracts/Issuance.sol";
 import {NavTracker} from "src/contracts/NavTracker.sol";
- 
-contract DeployInvestMintDFTTest is Test {
-    DeployInvestMintDFT deployer;
+
+contract DeployInvestMintTest is Test {
+    DeployInvestMint deployer;
     InvestMintDFT dft;
     Issuance issuance;
     NavTracker navTracker;
 
     function setUp() external {
-        deployer = new DeployInvestMintDFT();
+        deployer = new DeployInvestMint();
         (dft, issuance, navTracker) = deployer.run();
     }
 
-    function testDFTDeployed() view external {
+    function testDFTDeployed() external view {
         assert(address(dft) != address(0));
         assert(dft.totalSupply() == deployer.initialSupply());
     }
-    
-    function testIssuanceDeployed() view external {
+
+    function testIssuanceDeployed() external view {
         assert(address(issuance) != address(0));
     }
-    
-    function testNavTrackerDeployed() view external {
+
+    function testNavTrackerDeployed() external view {
         assert(address(navTracker) != address(0));
     }
 }
