@@ -11,8 +11,10 @@ import {console} from "forge-std/console.sol";
 // TODO: Rebalancing event (request queuing)
 contract Issuance is IIssuance {
     address public investMintServer;
+    address public owner;
     InvestMintDFT public dft;
     NavTracker public navTracker;
+    uint256 public requestProcessingFee;
     uint256 public constant PRECISION = 1e18;
     mapping(address => bool) public depositVerifiedFor;
     mapping(address => bool) public redeemVerifiedFor;
@@ -48,42 +50,57 @@ contract Issuance is IIssuance {
     constructor(
         address _investMintServer,
         InvestMintDFT _dft,
-        NavTracker _navTracker
+        NavTracker _navTracker,
+        uint256 _requestProcessingFee,
+        address _owner
     ) {
         investMintServer = _investMintServer;
         dft = _dft;
         navTracker = _navTracker;
+        requestProcessingFee = _requestProcessingFee;
+        owner = _owner;
     }
 
     function issue(uint256 amount) external invariantCheck {
-        if (!depositVerifiedFor[msg.sender]) {
+        address marketMaker = msg.sender;
+        if (!depositVerifiedFor[marketMaker]) {
             revert Issuance__NoAssetsDeposited();
         }
 
-        dft.mint(msg.sender, amount);
-        emit DFTIssued(msg.sender, amount);
+        uint256 processingFeeInWei = _calculateRequestProcessingFeeOn(amount);
+        uint256 amountToBeMintedForMarketMaker = amount - processingFeeInWei;
+
+        dft.mint(marketMaker, amountToBeMintedForMarketMaker);
+        emit DFTIssued(marketMaker, amount);
+        dft.mint(owner, processingFeeInWei);
+        emit FeeReceived(processingFeeInWei);
 
         invariantChecker(); // FREI-PI pattern (Function: Require-Effect-Interaction, Protocol:Invariant)
 
-        // restoring the deposit status for msg.sender
-        delete depositVerifiedFor[msg.sender];
+        // restoring the deposit status for marketMaker
+        delete depositVerifiedFor[marketMaker];
         navTracker.calculateNAV(); // update Nav
     }
 
     function redeem(uint256 amount) external invariantCheck {
-        if (!redeemVerifiedFor[msg.sender]) {
+        address marketMaker = msg.sender;
+        if (!redeemVerifiedFor[marketMaker]) {
             revert Issuance__UnderlyingAssetsNotRedeemed();
         }
 
-        dft.burn(msg.sender, amount);
-        emit DFTRedeemed(msg.sender, amount);
-       
+        uint256 processingFeeInWei = _calculateRequestProcessingFeeOn(amount);
+        uint256 amountToBeRedeemed = amount - processingFeeInWei;
+
+        dft.transferFrom(marketMaker, owner, processingFeeInWei); /// @dev market maker should have approved the DFTs to be redeemed, to the Issuance contract, for this to not revert.
+        emit FeeReceived(processingFeeInWei);
+        dft.burn(marketMaker, amountToBeRedeemed);
+        emit DFTRedeemed(marketMaker, amount);
+
         invariantChecker(); // FREI-PI pattern (Function: Require-Effect-Interaction, Protocol:Invariant
 
         navTracker.calculateNAV();
-        // restoring the redeem status for msg.sender
-        delete redeemVerifiedFor[msg.sender];
-
+        // restoring the redeem status for marketMaker
+        delete redeemVerifiedFor[marketMaker];
     }
 
     /// @dev The exacty quantity of tokens deposited will not be checked onchain as AUM would have changed by that time of checking and DFTs supply would remain the same, resulting in wrong checks. We will rely on our UI+BE to quote and send the right quantities of underlying tokens to the custodian. The deposit & redemption verification functions will just get the deposit status and if true, will mint DFTs.
@@ -99,5 +116,14 @@ contract Issuance is IIssuance {
     ) external onlyInvestMintServer(msg.sender) {
         redeemVerifiedFor[redeemer] = true;
         emit RedemptionVerifiedFor(redeemer);
+    }
+
+    /// @notice Calculates minting or redemption fee based on the no. of DFTs
+    function _calculateRequestProcessingFeeOn(
+        uint256 amount
+    ) internal view returns (uint256) {
+        uint256 processingFeeInWei = (amount * (requestProcessingFee / 100)) /
+            PRECISION;
+        return processingFeeInWei;
     }
 }

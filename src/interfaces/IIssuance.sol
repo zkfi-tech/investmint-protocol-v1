@@ -12,6 +12,7 @@ interface IIssuance {
     /// Events
     event DFTIssued(address indexed, uint256 indexed);
     event DFTRedeemed(address, uint256);
+    event FeeReceived(uint256 amount);
     event DepositVerifierFor(address);
     event RedemptionVerifiedFor(address);
 

@@ -11,6 +11,7 @@ contract DeployInvestMint is Script {
     /// @notice These values have to be updated based on the off-chain AUM deposted and the desired initial NAV.
     uint256 public initialAUM = 5000e18; // $5000
     uint256 public initialNAV = 10e18; // $10
+    uint256 public requestProcessingFee = 1e16; // 0.01 
     uint256 public initialSupply;
     uint256 public constant PRECISION = 1e18;
     uint256 public constant DEFAULT_ANVIL_KEY =
@@ -26,7 +27,7 @@ contract DeployInvestMint is Script {
             initialAUM,
             dft
         );
-        Issuance issuance = new Issuance(investMintServer, dft, navTracker);
+        Issuance issuance = new Issuance(investMintServer, dft, navTracker, requestProcessingFee, owner);
 
         dft.transferOwnership(address(issuance));
         vm.stopBroadcast();
