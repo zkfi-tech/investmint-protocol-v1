@@ -10,7 +10,7 @@ interface IIssuance {
     error Issuance__ProtocolInvariantBroken(uint256 valueOfCirculatingDFTs, uint256 AUM);
 
     /// Events
-    event DFTIssued(address, uint256);
+    event DFTIssued(address indexed, uint256 indexed);
     event DFTRedeemed(address, uint256);
     event DepositVerifierFor(address);
     event RedemptionVerifiedFor(address);

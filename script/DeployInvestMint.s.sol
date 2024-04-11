@@ -8,9 +8,11 @@ import {NavTracker} from "src/contracts/NavTracker.sol";
 
 contract DeployInvestMint is Script {
     address public investMintServer = makeAddr("investMintServer");
+    /// @notice These values have to be updated based on the off-chain AUM deposted and the desired initial NAV.
     uint256 public initialAUM = 5000e18; // $5000
     uint256 public initialNAV = 10e18; // $10
     uint256 public initialSupply;
+    uint256 public constant PRECISION = 1e18;
     uint256 public constant DEFAULT_ANVIL_KEY =
         0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
     address public owner = makeAddr("owner");
@@ -30,7 +32,7 @@ contract DeployInvestMint is Script {
         vm.stopBroadcast();
 
         // minting the initial supply based on initial AUM & NAV to the protocol owner
-        initialSupply = initialAUM / initialNAV;
+        initialSupply = initialAUM * PRECISION / initialNAV; // 500e18 DFTs
         vm.prank(address(issuance));
         dft.mint(owner, initialSupply);
 

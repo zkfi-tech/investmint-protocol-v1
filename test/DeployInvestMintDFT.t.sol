@@ -21,6 +21,7 @@ contract DeployInvestMintTest is Test {
     function testDFTDeployed() external view {
         assert(address(dft) != address(0));
         assert(dft.totalSupply() == deployer.initialSupply());
+        assertEq(dft.owner(), address(issuance));
     }
 
     function testIssuanceDeployed() external view {

@@ -5,6 +5,7 @@ import {IIssuance} from "../interfaces/IIssuance.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {InvestMintDFT} from "./InvestMintDFT.sol";
 import {NavTracker} from "./NavTracker.sol";
+import {console} from "forge-std/console.sol";
 
 // TODO: Fee module
 // TODO: Rebalancing event (request queuing)
@@ -31,7 +32,9 @@ contract Issuance is IIssuance {
     function invariantChecker() internal view {
         uint256 totalDFTSupply = dft.totalSupply();
         uint256 activeNAVPerDFT = navTracker.getNAV();
-        uint256 valueOfCirculatingDFTs = totalDFTSupply * activeNAVPerDFT;
+        uint256 valueOfCirculatingDFTs = (totalDFTSupply * activeNAVPerDFT) /
+            PRECISION;
+        console.log("Circulating value:", valueOfCirculatingDFTs);
         uint256 AUM = navTracker.getAUM();
 
         if (valueOfCirculatingDFTs > AUM) {
@@ -50,8 +53,6 @@ contract Issuance is IIssuance {
         investMintServer = _investMintServer;
         dft = _dft;
         navTracker = _navTracker;
-
-        dft.setIssuer(address(this));
     }
 
     function issue(uint256 amount) external invariantCheck {
@@ -62,12 +63,11 @@ contract Issuance is IIssuance {
         dft.mint(msg.sender, amount);
         emit DFTIssued(msg.sender, amount);
 
-        navTracker.calculateNAV();
+        invariantChecker(); // FREI-PI pattern (Function: Require-Effect-Interaction, Protocol:Invariant)
 
         // restoring the deposit status for msg.sender
         delete depositVerifiedFor[msg.sender];
-
-        invariantChecker(); // FREI-PI pattern (Function: Require-Effect-Interaction, Protocol:Invariant)
+        navTracker.calculateNAV(); // update Nav
     }
 
     function redeem(uint256 amount) external invariantCheck {
@@ -77,12 +77,13 @@ contract Issuance is IIssuance {
 
         dft.burn(msg.sender, amount);
         emit DFTRedeemed(msg.sender, amount);
+       
+        invariantChecker(); // FREI-PI pattern (Function: Require-Effect-Interaction, Protocol:Invariant
 
         navTracker.calculateNAV();
         // restoring the redeem status for msg.sender
         delete redeemVerifiedFor[msg.sender];
 
-        invariantChecker(); // FREI-PI pattern (Function: Require-Effect-Interaction, Protocol:Invariant
     }
 
     /// @dev The exacty quantity of tokens deposited will not be checked onchain as AUM would have changed by that time of checking and DFTs supply would remain the same, resulting in wrong checks. We will rely on our UI+BE to quote and send the right quantities of underlying tokens to the custodian. The deposit & redemption verification functions will just get the deposit status and if true, will mint DFTs.
