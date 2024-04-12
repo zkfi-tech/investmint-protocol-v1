@@ -47,9 +47,8 @@ contract NavTracker is INavTracker {
         uint256 circulatingDFTs = investMintDFT.totalSupply();
 
         if (circulatingDFTs > 0) {
-            navPerDFT = (assetsUnderManagement / circulatingDFTs);
+            navPerDFT = ((assetsUnderManagement * PRECISION) / circulatingDFTs);
         }
-
         return navPerDFT;
     }
 

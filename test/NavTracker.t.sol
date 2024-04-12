@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.25;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {NavTracker} from "src/contracts/NavTracker.sol";
 import {INavTracker} from "src/interfaces/INavTracker.sol";
 import {InvestMintDFT} from "src/contracts/InvestMintDFT.sol";
@@ -17,6 +17,7 @@ contract NavTrackerTest is Test {
     address public owner;
     address public random = makeAddr("random");
     address public investMintServer;
+    uint256 public constant PRECISION = 1e18;
 
     function setUp() external {
         deployer = new DeployInvestMint();
@@ -52,14 +53,14 @@ contract NavTrackerTest is Test {
     //////////////////////////////////
     ///// CalculateNAV() tests //////
     /////////////////////////////////
-    function testNavIncreasesWhenAUMIncreases() external {
+    function testNAVIncreasesWhenAUMIncreases() external {
         // Setup
         uint256 totalSupply = dft.totalSupply();
-        uint256 initialNAV = navTracker.getNAV();
+        uint256 initialNav = navTracker.getNAV();
         uint256 currentAUM = navTracker.getAUM();
 
         // Act
-        uint256 increasedAUM = currentAUM + 500e18;
+        uint256 increasedAUM = currentAUM + 500e18; // increase due to inc. in asset market prices
         vm.prank(investMintServer);
         navTracker.aumListener(increasedAUM);
 
@@ -68,11 +69,11 @@ contract NavTrackerTest is Test {
         // increased AUM = 5500
         // totalSupply = 500
         // active nav = 5500/500 = $11
-        uint256 expectedNav = (increasedAUM / totalSupply);
+        uint256 expectedNav = ((increasedAUM * PRECISION) / totalSupply);
         navTracker.calculateNAV();
         uint256 activeNav = navTracker.getNAV();
 
-        assert(initialNAV < activeNav);
+        assert(initialNav < activeNav);
         assertEq(activeNav, expectedNav);
     }
 
@@ -81,16 +82,16 @@ contract NavTrackerTest is Test {
     {
         // Setup
         // increasing AUM
-        uint256 initialNAV = navTracker.getNAV(); // 10
-        uint256 currentAUM = navTracker.getAUM(); // 5000
-        uint256 mintDFTs = 5;
-        uint256 valueToDeposit = mintDFTs * initialNAV;
+        uint256 initialNAV = navTracker.getNAV(); // 10e18
+        uint256 currentAUM = navTracker.getAUM(); // 5000e18
+        uint256 mintDFTs = 5e18;
+        uint256 valueToDeposit = (mintDFTs * initialNAV) / PRECISION; // (5e18 * 10e18)/ 1e18 = 50e18
         // 5 * $10 = $50
 
-        uint256 increasedAUM = currentAUM + valueToDeposit; // 5050
+        uint256 increasedAUM = (currentAUM + valueToDeposit) ; // 5050e18
 
         vm.prank(investMintServer);
-        navTracker.aumListener(increasedAUM);
+        navTracker.aumListener(increasedAUM); // 5050e18
 
         // minting 5 DFTs post deposit
         vm.prank(address(issuance));

@@ -7,6 +7,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 /// @title IMDFT Token
 /// @author InvestMint
 /// @notice The Digital Fund Token unitizing Vinter Index Multi Asset Basket 
+/// @dev    owner: Issuance contract (Since ownership was transferred in the deployment script)
 contract InvestMintDFT is ERC20, Ownable {
     error InvestMintDFT__ProvideNonZeroAmount();
     

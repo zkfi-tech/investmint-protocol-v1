@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 interface IIssuance {
     /// Errors
     error Issuance__NoAssetsDeposited();
+    error Issuance__AmountCannotBeZero();
     error Issuance__UnderlyingAssetsNotRedeemed();
     error Issuance__UnAuthorizedSender(address);
     error Issuance__ProtocolInvariantBroken(uint256 valueOfCirculatingDFTs, uint256 AUM);

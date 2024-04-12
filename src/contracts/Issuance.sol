@@ -58,7 +58,7 @@ contract Issuance is IIssuance {
         dft = _dft;
         navTracker = _navTracker;
         requestProcessingFee = _requestProcessingFee;
-        owner = _owner;
+        owner = _owner; // protocol owner
     }
 
     function issue(uint256 amount) external invariantCheck {
@@ -67,11 +67,15 @@ contract Issuance is IIssuance {
             revert Issuance__NoAssetsDeposited();
         }
 
-        uint256 processingFeeInWei = _calculateRequestProcessingFeeOn(amount);
+        if (amount <= 0) {
+            revert Issuance__AmountCannotBeZero();
+        }
+
+        uint256 processingFeeInWei = calculateRequestProcessingFeeOn(amount);
         uint256 amountToBeMintedForMarketMaker = amount - processingFeeInWei;
 
         dft.mint(marketMaker, amountToBeMintedForMarketMaker);
-        emit DFTIssued(marketMaker, amount);
+        emit DFTIssued(marketMaker, amountToBeMintedForMarketMaker);
         dft.mint(owner, processingFeeInWei);
         emit FeeReceived(processingFeeInWei);
 
@@ -82,17 +86,22 @@ contract Issuance is IIssuance {
         navTracker.calculateNAV(); // update Nav
     }
 
-    function redeem(uint256 amount) external invariantCheck {
+    function redeem(uint256 amount) external {
         address marketMaker = msg.sender;
         if (!redeemVerifiedFor[marketMaker]) {
             revert Issuance__UnderlyingAssetsNotRedeemed();
         }
 
-        uint256 processingFeeInWei = _calculateRequestProcessingFeeOn(amount);
+        if (amount <= 0) {
+            revert Issuance__AmountCannotBeZero();
+        }
+
+        uint256 processingFeeInWei = calculateRequestProcessingFeeOn(amount);
         uint256 amountToBeRedeemed = amount - processingFeeInWei;
 
         dft.transferFrom(marketMaker, owner, processingFeeInWei); /// @dev market maker should have approved the DFTs to be redeemed, to the Issuance contract, for this to not revert.
         emit FeeReceived(processingFeeInWei);
+
         dft.burn(marketMaker, amountToBeRedeemed);
         emit DFTRedeemed(marketMaker, amount);
 
@@ -119,9 +128,9 @@ contract Issuance is IIssuance {
     }
 
     /// @notice Calculates minting or redemption fee based on the no. of DFTs
-    function _calculateRequestProcessingFeeOn(
+    function calculateRequestProcessingFeeOn(
         uint256 amount
-    ) internal view returns (uint256) {
+    ) public view returns (uint256) {
         uint256 processingFeeInWei = (amount * (requestProcessingFee / 100)) /
             PRECISION;
         return processingFeeInWei;
