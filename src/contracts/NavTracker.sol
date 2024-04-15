@@ -5,11 +5,11 @@ import {INavTracker} from "../interfaces/INavTracker.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract NavTracker is INavTracker {
+    
     // States //
+    IERC20 public immutable investMintDFT;
     uint256 public assetsUnderManagement;
     uint256 public navPerDFT;
-    IERC20 public immutable investMintDFT;
-
     address public investMintServer;
 
     uint256 public constant PRECISION = 1e18;
@@ -40,7 +40,7 @@ contract NavTracker is INavTracker {
     // External Functions //
     function aumListener(uint256 latestAUM) external only(investMintServer) {
         assetsUnderManagement = latestAUM; // 18 decimals
-        emit AUMReceived(assetsUnderManagement, block.timestamp);  
+        emit AUMReceived(assetsUnderManagement, block.timestamp);
     }
 
     function calculateNAV() public returns (uint256) {

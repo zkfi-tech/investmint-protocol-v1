@@ -88,7 +88,7 @@ contract NavTrackerTest is Test {
         uint256 valueToDeposit = (mintDFTs * initialNAV) / PRECISION; // (5e18 * 10e18)/ 1e18 = 50e18
         // 5 * $10 = $50
 
-        uint256 increasedAUM = (currentAUM + valueToDeposit) ; // 5050e18
+        uint256 increasedAUM = (currentAUM + valueToDeposit); // 5050e18
 
         vm.prank(investMintServer);
         navTracker.aumListener(increasedAUM); // 5050e18
