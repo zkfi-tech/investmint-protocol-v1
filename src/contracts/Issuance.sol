@@ -19,10 +19,10 @@ contract Issuance is IIssuance {
     NavTracker public navTracker;
     uint256 public requestProcessingFee;
     int256 public timestampOfLastInflation;
-    
+
     uint256 public constant PRECISION = 1e18;
     int256 public constant MANAGEMENT_FEE = 0.01e18; // 1% = 0.01
-    
+
     mapping(address => bool) public depositVerifiedFor;
     mapping(address => bool) public redeemVerifiedFor;
 
@@ -66,7 +66,7 @@ contract Issuance is IIssuance {
         navTracker = _navTracker;
         requestProcessingFee = _requestProcessingFee;
         owner = _owner; // protocol owner
-        timestampOfLastInflation = int256(block.timestamp) - 60 minutes;
+        timestampOfLastInflation = 0;
     }
 
     function issue(uint256 amount) external invariantCheck {
@@ -91,7 +91,7 @@ contract Issuance is IIssuance {
 
         // restoring the deposit status for marketMaker
         delete depositVerifiedFor[marketMaker];
-        _inflateNAV(); 
+        _inflateNAV();
     }
 
     function redeem(uint256 amount) external {
@@ -126,7 +126,7 @@ contract Issuance is IIssuance {
         address depositer
     ) external onlyInvestMintServer(msg.sender) {
         depositVerifiedFor[depositer] = true;
-        emit DepositVerifierFor(depositer);
+        emit DepositVerifiedFor(depositer);
     }
 
     function confirmRedemption(
@@ -151,18 +151,26 @@ contract Issuance is IIssuance {
 
     /// @dev Charging management fee by inflating the DFT supply and therefore decreasing the NAV. Calls `NavTracker::calculateNAV()` to get latest NAV after inflation of supply.
     function _inflateNAV() internal {
+        console.log("Inflating NAV now!");
+        /// First mint request will not be charged any management fee
+        if (timestampOfLastInflation == 0) {
+            timestampOfLastInflation = int256(block.timestamp);
+            return;
+        }
+
         int256 dftSupply = int256(investMintDFT.totalSupply()); // 5.02e20
         int256 inflationMultiplier = _calculateInflationMultiplier(); // 1000001147299271560
-        int256 inflatedSupply = (dftSupply * inflationMultiplier) / int256(PRECISION); 
+
+        int256 inflatedSupply = (dftSupply * inflationMultiplier) /
+            int256(PRECISION);
         // mint extra dfts to match inflatedSupply
         int256 extraDFTs = inflatedSupply - dftSupply; // 5.759e14 = 0.0005759e18
-        
+
         // mint extraDFTs and send them to fee receiver/owner
         investMintDFT.mint(owner, uint256(extraDFTs));
-        navTracker.calculateNAV(); // 9999988527020447341 - 10000000000000000000 = 
+        navTracker.calculateNAV(); // 9999988527020447341 - 10000000000000000000 =
     }
 
-    
     /// @dev Calculates the inflation multiplier based on the below formula
     /*
     1/r^n=1-x
@@ -182,7 +190,7 @@ contract Issuance is IIssuance {
         // first calculate `m`: mins passed since last mint/redeem
         int256 minutesPassedSinceLastInflation = ((int256(block.timestamp) -
             timestampOfLastInflation) * int256(PRECISION)) / 60;
-        
+
         // now `n` which is basically portioning the whole year into portions with each portion = `m`
         int256 portioningAYearByMinsPassed = (365 *
             24 *
@@ -196,5 +204,5 @@ contract Issuance is IIssuance {
         );
 
         return inflationMultiplier;
-    } 
+    }
 }

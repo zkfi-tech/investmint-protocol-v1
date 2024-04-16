@@ -21,6 +21,7 @@ contract IssuanceTest is Test {
     address public investMintServer;
     uint256 public initialSupplyWithOwner;
     uint256 public constant PRECISION = 1e18;
+    uint256 public constant TIMEGAP = 3600;
     uint256 public randomDFTAmount = 2e18;
 
     function setUp() external {
@@ -38,11 +39,38 @@ contract IssuanceTest is Test {
         dft.mint(owner, randomDFTAmount);
     }
 
-    function _redemptionSetup() internal returns (uint256, uint256, uint256) {
+    function _issueSetup() internal returns (uint256, uint256) {
+        // Setup
+        // Deposit underlying assets
+        uint256 nav = navTracker.getNAV();
+        uint256 assetValueDeposited = (randomDFTAmount * nav) / PRECISION;
+        uint256 latestAUM = navTracker.getAUM() + assetValueDeposited;
+
+        vm.startPrank(investMintServer);
+        navTracker.aumListener(latestAUM);
+
+        // confirm deposit for market maker
+        issuance.confirmDeposit(marketMaker);
+        vm.stopPrank();
+
+        // executing the mint request
+        // getting the minting fee
+        uint256 reqProcessingFee = issuance.calculateRequestProcessingFeeOn(
+            randomDFTAmount
+        );
+        uint256 marketMakerReceives = randomDFTAmount - reqProcessingFee;
+
+        return (marketMakerReceives, reqProcessingFee);
+    }
+
+    function _redemptionSetup()
+        internal
+        returns (uint256, uint256, uint256, uint256)
+    {
         // Mint DFT process
         // Deposit underlying assets
-        uint256 assetValueDeposited = (randomDFTAmount * navTracker.getNAV()) /
-            PRECISION;
+        uint256 nav = navTracker.getNAV();
+        uint256 assetValueDeposited = (randomDFTAmount * nav) / PRECISION;
         uint256 latestAUM = navTracker.getAUM() + assetValueDeposited;
 
         vm.startPrank(investMintServer);
@@ -58,6 +86,7 @@ contract IssuanceTest is Test {
         uint256 marketMakerReceivedBal = dft.balanceOf(marketMaker);
 
         // Redemption process starts
+        vm.warp(block.timestamp + TIMEGAP); // creating time diff. between issue - redeemption for management fee inclusion
         uint256 redeemReqProcessingFee = issuance
             .calculateRequestProcessingFeeOn(marketMakerReceivedBal);
         uint256 dftsBeingRedeemed = marketMakerReceivedBal -
@@ -79,7 +108,8 @@ contract IssuanceTest is Test {
         return (
             marketMakerReceivedBal,
             redeemReqProcessingFee,
-            ownerBalBeforeRedemption
+            ownerBalBeforeRedemption,
+            nav
         );
     }
 
@@ -134,26 +164,7 @@ contract IssuanceTest is Test {
     }
 
     function testIssuePostAssetDeposit() external {
-        // Setup
-        // Deposit underlying assets
-        uint256 assetValueDeposited = (randomDFTAmount * navTracker.getNAV()) /
-            PRECISION;
-        uint256 latestAUM = navTracker.getAUM() + assetValueDeposited;
-
-        vm.startPrank(investMintServer);
-        navTracker.aumListener(latestAUM);
-
-        // confirm deposit for market maker
-        issuance.confirmDeposit(marketMaker);
-        vm.stopPrank();
-
-        // executing the mint request
-        // getting the minting fee
-        uint256 reqProcessingFee = issuance.calculateRequestProcessingFeeOn(
-            randomDFTAmount
-        );
-        uint256 marketMakerReceives = randomDFTAmount - reqProcessingFee;
-
+        (uint256 marketMakerReceives, uint256 reqProcessingFee) = _issueSetup();
         vm.prank(marketMaker);
         vm.expectEmit(true, true, false, true, address(issuance));
         emit DFTIssued(marketMaker, marketMakerReceives);
@@ -162,9 +173,27 @@ contract IssuanceTest is Test {
         // assert
         assertEq(dft.balanceOf(marketMaker), marketMakerReceives);
         assert(
-            dft.balanceOf(owner) >
-            (initialSupplyWithOwner + reqProcessingFee)
-        ); // management fee will also be sent to owner post minting
+            dft.balanceOf(owner) >= (initialSupplyWithOwner + reqProcessingFee)
+        );
+    }
+
+    function testNavRemainsSameOnFirstMintButInflatesAfterSecond() external {
+        // Setup
+        uint256 initialNAV = navTracker.getNAV();        
+        _issueSetup();
+
+        vm.prank(marketMaker);
+        issuance.issue(randomDFTAmount);
+        uint256 navAfterFirstMint = navTracker.getNAV();
+
+        vm.warp(block.timestamp + TIMEGAP);
+        _issueSetup();
+        vm.prank(marketMaker);
+        issuance.issue(randomDFTAmount);
+        uint256 navAfterSecondMint = navTracker.getNAV();
+
+        assertEq(initialNAV, navAfterFirstMint);
+        assert(initialNAV > navAfterSecondMint);
     }
 
     //////////////////////
@@ -172,11 +201,7 @@ contract IssuanceTest is Test {
     //////////////////////
     function testRedeemRevertsWhenProtocolInvariantBroken() external {
         // Setup
-        (
-            uint256 marketMakerBal,
-            ,
-            
-        ) = _redemptionSetup();
+        (uint256 marketMakerBal, , , ) = _redemptionSetup();
 
         vm.startPrank(marketMaker);
         dft.approve(address(issuance), marketMakerBal);
@@ -201,7 +226,8 @@ contract IssuanceTest is Test {
         (
             uint256 marketMakerBal,
             uint256 redeemReqProcessingFee,
-            uint256 ownerBalBeforeRedemption
+            uint256 ownerBalBeforeRedemption,
+            uint256 navBeforeRedemption
         ) = _redemptionSetup();
 
         // executing the redeem request
@@ -213,9 +239,10 @@ contract IssuanceTest is Test {
         // assert
         assertEq(dft.balanceOf(marketMaker), 0);
         assert(
-            dft.balanceOf(owner) >
-            (initialSupplyWithOwner + redeemReqProcessingFee)
+            dft.balanceOf(owner) >=
+                (initialSupplyWithOwner + redeemReqProcessingFee)
         ); // management fee will also be sent to owner post redemption
+        assert(navTracker.getNAV() < navBeforeRedemption); // NAV reduces post inflation in supply caused due to management fee
     }
 
     /////////////////////////////////

@@ -8,13 +8,16 @@ interface IIssuance {
     error Issuance__AmountCannotBeZero();
     error Issuance__UnderlyingAssetsNotRedeemed();
     error Issuance__UnAuthorizedSender(address);
-    error Issuance__ProtocolInvariantBroken(uint256 valueOfCirculatingDFTs, uint256 AUM);
+    error Issuance__ProtocolInvariantBroken(
+        uint256 valueOfCirculatingDFTs,
+        uint256 AUM
+    );
 
     /// Events
     event DFTIssued(address indexed, uint256 indexed);
     event DFTRedeemed(address, uint256);
     event FeeReceived(uint256 amount);
-    event DepositVerifierFor(address);
+    event DepositVerifiedFor(address);
     event RedemptionVerifiedFor(address);
 
     /// @notice Issue DFTs to market maker
@@ -24,12 +27,8 @@ interface IIssuance {
     function redeem(uint256 amount) external;
 
     /// @notice Get underlying asset deposit confirmation from custodian
-    function confirmDeposit(
-        address depositer
-    ) external;
+    function confirmDeposit(address depositer) external;
 
     /// @notice Get underlying asset redemption confirmation from custodian
-    function confirmRedemption(
-        address redeemer
-    ) external;
+    function confirmRedemption(address redeemer) external;
 }

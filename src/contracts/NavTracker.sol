@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {INavTracker} from "../interfaces/INavTracker.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {console} from "forge-std/console.sol";
 
 contract NavTracker is INavTracker {
     
@@ -39,7 +40,7 @@ contract NavTracker is INavTracker {
 
     // External Functions //
     function aumListener(uint256 latestAUM) external only(investMintServer) {
-        assetsUnderManagement = latestAUM; // 18 decimals
+        assetsUnderManagement = latestAUM; // with PRECISION
         emit AUMReceived(assetsUnderManagement, block.timestamp);
     }
 
@@ -47,6 +48,7 @@ contract NavTracker is INavTracker {
         uint256 circulatingDFTs = investMintDFT.totalSupply();
 
         if (circulatingDFTs > 0) {
+            console.log('AUM when calc NAV:', assetsUnderManagement);
             navPerDFT = ((assetsUnderManagement * PRECISION) / circulatingDFTs);
         }
         return navPerDFT;
