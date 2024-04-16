@@ -179,7 +179,7 @@ contract IssuanceTest is Test {
 
     function testNavRemainsSameOnFirstMintButInflatesAfterSecond() external {
         // Setup
-        uint256 initialNAV = navTracker.getNAV();        
+        uint256 initialNAV = navTracker.getNAV();
         _issueSetup();
 
         vm.prank(marketMaker);
@@ -226,7 +226,7 @@ contract IssuanceTest is Test {
         (
             uint256 marketMakerBal,
             uint256 redeemReqProcessingFee,
-            uint256 ownerBalBeforeRedemption,
+            ,
             uint256 navBeforeRedemption
         ) = _redemptionSetup();
 

@@ -14,8 +14,6 @@ contract DeployInvestMint is Script {
     uint256 public requestProcessingFee = 1e16; // 0.01 
     uint256 public initialSupply;
     uint256 public constant PRECISION = 1e18;
-    uint256 public constant DEFAULT_ANVIL_KEY =
-        0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
     address public owner = makeAddr("owner");
 
     function run() external returns (InvestMintDFT, Issuance, NavTracker) {
